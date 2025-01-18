@@ -292,7 +292,7 @@ const storage = {
       return null;
     }
   },
-  set: <T extends unknown>(key: string, value: T) => {
+  set: (key: string, value: ScoreEntry[]) => {
     try {
       if (typeof window === 'undefined') return;
       window.localStorage.setItem(key, JSON.stringify(value));
