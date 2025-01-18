@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { highScores as highScoresApi, type HighScore } from '@/utils/supabase';
 /** --------------------------
  * 1) TYPE DEFINITIONS
  * --------------------------*/
@@ -267,38 +268,12 @@ function generateValidPuzzle(mode: Mode): GameBoard {
  * --------------------------*/
 
 /** Score entry type */
-type ScoreEntry = {
-  username: string;
-  score: number;
-  timestamp: number;
-};
+type ScoreEntry = HighScore;
 
 /** Initial high scores - these will be used as default/static high scores */
 const INITIAL_HIGH_SCORES: ScoreEntry[] = [
-  { username: 'mystic_mewtwo', score: 25, timestamp: 1709251200000 },
+  { username: 'mystic_mewtwo', score: 25, timestamp: 1709251200000 }
 ];
-
-/** Safe localStorage wrapper */
-const storage = {
-  get: (key: string) => {
-    try {
-      if (typeof window === 'undefined') return null;
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : null;
-    } catch (e) {
-      console.error('Error reading from localStorage:', e);
-      return null;
-    }
-  },
-  set: (key: string, value: ScoreEntry[]) => {
-    try {
-      if (typeof window === 'undefined') return;
-      window.localStorage.setItem(key, JSON.stringify(value));
-    } catch (e) {
-      console.error('Error writing to localStorage:', e);
-    }
-  }
-};
 
 export default function HashiGame() {
   // State
@@ -320,45 +295,29 @@ export default function HashiGame() {
 
   // Load high scores and current user's score on mount
   useEffect(() => {
-    const loadHighScores = () => {
-      const savedScores = storage.get('hashiHighScores');
-      if (Array.isArray(savedScores) && savedScores.length > 0) {
-        // Validate the structure of saved scores
-        const validScores = savedScores.every(score => 
-          typeof score === 'object' &&
-          typeof score.username === 'string' &&
-          typeof score.score === 'number' &&
-          typeof score.timestamp === 'number'
-        );
-        
-        if (validScores) {
-          setHighScores(savedScores);
+    const loadHighScores = async () => {
+      try {
+        const scores = await highScoresApi.getAll();
+        if (scores.length > 0) {
+          setHighScores(scores);
           // If we have a username, set their current score
           if (username) {
-            const userScore = savedScores.find(score => score.username === username);
+            const userScore = scores.find(score => score.username === username);
             if (userScore) {
               setCurrentScore(userScore.score);
             }
           }
         } else {
-          console.warn('Invalid scores found, resetting to initial scores');
           setHighScores(INITIAL_HIGH_SCORES);
-          storage.set('hashiHighScores', INITIAL_HIGH_SCORES);
         }
-      } else {
+      } catch (error) {
+        console.error('Error loading high scores:', error);
         setHighScores(INITIAL_HIGH_SCORES);
-        storage.set('hashiHighScores', INITIAL_HIGH_SCORES);
       }
     };
 
-    // Try to load scores after a short delay to ensure window is available
-    if (typeof window !== 'undefined') {
-      loadHighScores();
-    } else {
-      const timer = setTimeout(loadHighScores, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [username]); // Add username as dependency to reload when it changes
+    loadHighScores();
+  }, [username]);
 
   // Handle username submission
   const handleUsernameSubmit = (e: React.FormEvent) => {
@@ -415,36 +374,33 @@ export default function HashiGame() {
       const scoreMultiplier = SCORE_MULTIPLIERS[mode];
       const newScore = currentScore + scoreMultiplier;
       
-      setHighScores(prev => {
+      const updateScore = async () => {
         try {
-          const existingEntry = prev.find(entry => entry.username === username);
-          if (!existingEntry || existingEntry.score < newScore) {
-            const filteredScores = prev.filter(entry => entry.username !== username);
-            const newEntry: ScoreEntry = {
-              username,
-              score: newScore,
-              timestamp: Date.now()
-            };
-            const newScores = [...filteredScores, newEntry]
-              .sort((a, b) => b.score - a.score || b.timestamp - a.timestamp)
-              .slice(0, 10);
-            storage.set('hashiHighScores', newScores);
-            setCurrentScore(newScore); // Update current score after validation
-            return newScores;
-          }
-          return prev;
-        } catch (e) {
-          console.error('Error updating high scores:', e);
-          return prev;
-        }
-      });
+          const result = await highScoresApi.upsert({
+            username,
+            score: newScore,
+            timestamp: Date.now()
+          });
 
-      // Use RAF to ensure we're not blocking the UI
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          loadRandomPuzzle();
-        }, 1500);
-      });
+          if (result) {
+            setCurrentScore(newScore);
+            // Refresh high scores
+            const scores = await highScoresApi.getAll();
+            setHighScores(scores);
+          }
+        } catch (error) {
+          console.error('Error updating score:', error);
+        }
+
+        // Use RAF to ensure we're not blocking the UI
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            loadRandomPuzzle();
+          }, 1500);
+        });
+      };
+
+      updateScore();
     }
   }, [isGameWon, mode, currentScore, username, loadRandomPuzzle, isUpdatingScore]);
 
