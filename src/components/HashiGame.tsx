@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 
 /** --------------------------
@@ -292,7 +292,7 @@ const storage = {
       return null;
     }
   },
-  set: (key: string, value: any) => {
+  set: <T extends unknown>(key: string, value: T) => {
     try {
       if (typeof window === 'undefined') return;
       window.localStorage.setItem(key, JSON.stringify(value));
@@ -391,7 +391,7 @@ export default function HashiGame() {
   /** 
    * Reload puzzle 
    */
-  const loadRandomPuzzle = () => {
+  const loadRandomPuzzle = useCallback(() => {
     setIsLoading(true);
     setTimeout(() => {
       const puzzle = generateValidPuzzle(mode);
@@ -403,7 +403,7 @@ export default function HashiGame() {
       setIsGameWon(false);
       setIsLoading(false);
     }, 300);
-  };
+  }, [mode]);
 
   // Auto-load next puzzle on win with better score handling
   useEffect(() => {
@@ -439,7 +439,7 @@ export default function HashiGame() {
         loadRandomPuzzle();
       }, 1500);
     }
-  }, [isGameWon, mode, currentScore, username]);
+  }, [isGameWon, mode, currentScore, username, loadRandomPuzzle]);
 
   // Generate puzzle on mount / mode change
   useEffect(() => {
