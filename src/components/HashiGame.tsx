@@ -319,7 +319,7 @@ export default function HashiGame() {
   const [highScores, setHighScores] = useState<ScoreEntry[]>([]);
   const [showUsernameModal, setShowUsernameModal] = useState(true);
 
-  // Load high scores on mount - now with better error handling
+  // Load high scores and current user's score on mount
   useEffect(() => {
     const loadHighScores = () => {
       const savedScores = storage.get('hashiHighScores');
@@ -334,6 +334,13 @@ export default function HashiGame() {
         
         if (validScores) {
           setHighScores(savedScores);
+          // If we have a username, set their current score
+          if (username) {
+            const userScore = savedScores.find(score => score.username === username);
+            if (userScore) {
+              setCurrentScore(userScore.score);
+            }
+          }
         } else {
           console.warn('Invalid scores found, resetting to initial scores');
           setHighScores(INITIAL_HIGH_SCORES);
@@ -352,20 +359,15 @@ export default function HashiGame() {
       const timer = setTimeout(loadHighScores, 100);
       return () => clearTimeout(timer);
     }
-  }, []);
-
-  // Save high scores when they change, with validation
-  useEffect(() => {
-    if (highScores.length > 0) {
-      storage.set('hashiHighScores', highScores);
-    }
-  }, [highScores]);
+  }, [username]); // Add username as dependency to reload when it changes
 
   // Handle username submission
   const handleUsernameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (username.trim()) {
       setShowUsernameModal(false);
+      // Reset score when new username is set
+      setCurrentScore(0);
     }
   };
 
@@ -410,7 +412,6 @@ export default function HashiGame() {
     if (isGameWon && username) {
       const scoreMultiplier = SCORE_MULTIPLIERS[mode];
       const newScore = currentScore + scoreMultiplier;
-      setCurrentScore(newScore);
       
       setHighScores(prev => {
         try {
@@ -426,6 +427,7 @@ export default function HashiGame() {
               .sort((a, b) => b.score - a.score || b.timestamp - a.timestamp)
               .slice(0, 10);
             storage.set('hashiHighScores', newScores);
+            setCurrentScore(newScore); // Update current score after validation
             return newScores;
           }
           return prev;
@@ -777,13 +779,6 @@ export default function HashiGame() {
             <div className="bg-zinc-900 p-8 rounded-2xl shadow-2xl border border-zinc-700">
               <div className="flex items-center gap-4 mb-4">
                 <h2 className="text-2xl font-bold text-white">Enter Your Username</h2>
-                <Image 
-                  src="https://cdn3.emoji.gg/emojis/6304_pepenerd.png" 
-                  width={48} 
-                  height={48} 
-                  alt="pepenerd"
-                  className="object-contain"
-                />
               </div>
               <form onSubmit={handleUsernameSubmit} className="space-y-4">
                 <input
