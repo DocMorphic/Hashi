@@ -310,6 +310,7 @@ export default function HashiGame() {
   const [dragLine, setDragLine] = useState<{ x: number; y: number } | null>(null);
   const [isGameWon, setIsGameWon] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUpdatingScore, setIsUpdatingScore] = useState(false);
 
   // New state for scoring
   const [username, setUsername] = useState<string>('');
@@ -392,6 +393,7 @@ export default function HashiGame() {
    * Reload puzzle 
    */
   const loadRandomPuzzle = useCallback(() => {
+    if (isLoading) return; // Prevent multiple loads
     setIsLoading(true);
     setTimeout(() => {
       const puzzle = generateValidPuzzle(mode);
@@ -402,12 +404,14 @@ export default function HashiGame() {
       setIsDragging(false);
       setIsGameWon(false);
       setIsLoading(false);
+      setIsUpdatingScore(false); // Reset the score update flag
     }, 300);
-  }, [mode]);
+  }, [mode, isLoading]);
 
   // Auto-load next puzzle on win with better score handling
   useEffect(() => {
-    if (isGameWon && username) {
+    if (isGameWon && username && !isUpdatingScore) {
+      setIsUpdatingScore(true); // Set flag to prevent multiple updates
       const scoreMultiplier = SCORE_MULTIPLIERS[mode];
       const newScore = currentScore + scoreMultiplier;
       
@@ -435,22 +439,27 @@ export default function HashiGame() {
         }
       });
 
-      setTimeout(() => {
-        loadRandomPuzzle();
-      }, 1500);
+      // Use RAF to ensure we're not blocking the UI
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          loadRandomPuzzle();
+        }, 1500);
+      });
     }
-  }, [isGameWon, mode, currentScore, username, loadRandomPuzzle]);
+  }, [isGameWon, mode, currentScore, username, loadRandomPuzzle, isUpdatingScore]);
 
   // Generate puzzle on mount / mode change
   useEffect(() => {
-    const puzzle = generateValidPuzzle(mode);
-    setBoard(puzzle);
-    setBridges([]);
-    setIsGameWon(false);
-    setSelectedPoint(null);
-    setDragLine(null);
-    setIsDragging(false);
-  }, [mode]);
+    if (!isUpdatingScore) { // Only generate new puzzle if not updating score
+      const puzzle = generateValidPuzzle(mode);
+      setBoard(puzzle);
+      setBridges([]);
+      setIsGameWon(false);
+      setSelectedPoint(null);
+      setDragLine(null);
+      setIsDragging(false);
+    }
+  }, [mode, isUpdatingScore]);
 
   /**
    * Check if we can connect these two points (same row/col, each > 0, no in-between).
