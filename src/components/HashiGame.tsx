@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 /** --------------------------
  * 1) TYPE DEFINITIONS
@@ -138,15 +139,6 @@ function unionFindInit(points: Point[]) {
 }
 
 /**
- * (Optional) check if two edges cross. For brevity, we skip the actual crossing logic
- * or always return false. In real code, you'd implement your "no crossing" check here.
- */
-function edgesCross() {
-  // ... your crossing logic ...
-  return false; // to keep it simple
-}
-
-/**
  * Generate a puzzle by:
  * 1. Placing random islands in the grid
  * 2. Building a minimal spanning tree (MST) of single edges
@@ -205,8 +197,6 @@ function generateValidPuzzle(mode: Mode): GameBoard {
     const { sameSet, union } = unionFindInit(islands);
     for (const e of potential) {
       if (!sameSet(e.start, e.end)) {
-        // check crossing if you want
-        // if (!usedEdges.some((ue) => edgesCross(ue, e))) ...
         usedEdges.push({ start: e.start, end: e.end, count: 1 });
         union(e.start, e.end);
       }
@@ -231,7 +221,6 @@ function generateValidPuzzle(mode: Mode): GameBoard {
         }
       } else {
         // add new single
-        // check crossing if you want
         usedEdges.push({ start: e.start, end: e.end, count: 1 });
         extrasToAdd--;
       }
@@ -355,6 +344,23 @@ export default function HashiGame() {
     setUsername(`${adj}_${poke}`);
   };
 
+  /** 
+   * Reload puzzle 
+   */
+  const loadRandomPuzzle = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      const puzzle = generateValidPuzzle(mode);
+      setBoard(puzzle);
+      setBridges([]);
+      setSelectedPoint(null);
+      setDragLine(null);
+      setIsDragging(false);
+      setIsGameWon(false);
+      setIsLoading(false);
+    }, 300);
+  };
+
   // Auto-load next puzzle on win
   useEffect(() => {
     if (isGameWon) {
@@ -362,7 +368,6 @@ export default function HashiGame() {
       const newScore = currentScore + scoreMultiplier;
       setCurrentScore(newScore);
       
-      // Update high scores only if it's a higher score for this username
       setHighScores(prev => {
         const existingEntry = prev.find(entry => entry.username === username);
         if (!existingEntry || existingEntry.score < newScore) {
@@ -381,12 +386,11 @@ export default function HashiGame() {
         return prev;
       });
 
-      // Auto-load next puzzle after a short delay
       setTimeout(() => {
         loadRandomPuzzle();
       }, 1500);
     }
-  }, [isGameWon, mode]);
+  }, [isGameWon, mode, currentScore, username, loadRandomPuzzle]);
 
   // Generate puzzle on mount / mode change
   useEffect(() => {
@@ -398,40 +402,6 @@ export default function HashiGame() {
     setDragLine(null);
     setIsDragging(false);
   }, [mode]);
-
-  /** 
-   * Reload puzzle 
-   */
-  const loadRandomPuzzle = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      const puzzle = generateValidPuzzle(mode);
-      setBoard(puzzle);
-      setBridges([]);
-      setSelectedPoint(null);
-      setDragLine(null);
-      setIsDragging(false);
-      setIsGameWon(false);
-      setIsLoading(false);
-    }, 300);
-  };
-
-  /** 
-   * Debug layout 
-   */
-  const printLayoutForDebug = () => {
-    console.log(JSON.stringify({
-      board: board.map(({ x, y, value, remainingConnections }) => ({
-        x, y, value, remainingConnections
-      })),
-      bridges: bridges.map(({ id, start, end, count }) => ({
-        id,
-        start: { x: start.x, y: start.y },
-        end: { x: end.x, y: end.y },
-        count
-      }))
-    }, null, 2));
-  };
 
   /**
    * Check if we can connect these two points (same row/col, each > 0, no in-between).
@@ -692,7 +662,7 @@ export default function HashiGame() {
                 : 'bg-zinc-800 text-white hover:bg-zinc-700'
             }`}
           >
-            I'm Bored (4x)
+            I&apos;m Bored (4x)
           </button>
         </div>
 
@@ -758,10 +728,10 @@ export default function HashiGame() {
             <div className="bg-zinc-900 p-8 rounded-2xl shadow-2xl border border-zinc-700">
               <div className="flex items-center gap-4 mb-4">
                 <h2 className="text-2xl font-bold text-white">Enter Your Username</h2>
-                <img 
+                <Image 
                   src="https://cdn3.emoji.gg/emojis/6304_pepenerd.png" 
-                  width="48" 
-                  height="48" 
+                  width={48} 
+                  height={48} 
                   alt="pepenerd"
                   className="object-contain"
                 />
