@@ -69,8 +69,8 @@ const RENDER_SCALES: Record<Mode, number> = {
 /** Score multipliers for each mode */
 const SCORE_MULTIPLIERS: Record<Mode, number> = {
   easy: 1,
-  normal: 2,
-  insane: 4,
+  normal: 3,
+  insane: 10,
 };
 
 /** --------------------------
@@ -717,7 +717,7 @@ export default function HashiGame() {
                 : 'bg-zinc-800 text-white hover:bg-zinc-700'
             }`}
           >
-            Normal (2x)
+            Normal (3x)
           </button>
           <button
             onClick={() => setMode('insane')}
@@ -727,7 +727,7 @@ export default function HashiGame() {
                 : 'bg-zinc-800 text-white hover:bg-zinc-700'
             }`}
           >
-            I&apos;m Bored (4x)
+            I&apos;m Bored (10x)
           </button>
         </div>
 
