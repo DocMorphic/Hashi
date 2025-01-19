@@ -656,6 +656,46 @@ export default function HashiGame() {
     }
   };
 
+  // Add touch event handlers
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !selectedPoint) return;
+    e.preventDefault(); // Prevent scrolling while dragging
+    
+    const scale = RENDER_SCALES[mode];
+    const touch = e.touches[0];
+    
+    // Get the game board element
+    const gameBoard = e.currentTarget.querySelector('.game-board') as HTMLElement;
+    if (!gameBoard) return;
+    
+    const rect = gameBoard.getBoundingClientRect();
+    
+    // Calculate position relative to the game board
+    const x = ((touch.clientX - rect.left) / rect.width) * scale;
+    const y = ((touch.clientY - rect.top) / rect.height) * scale;
+
+    setDragLine({ x, y });
+
+    // check if near another island
+    const near = board.find((pp) => {
+      const dx = Math.abs(pp.x - x);
+      const dy = Math.abs(pp.y - y);
+      return dx < 0.5 && dy < 0.5 && pp !== selectedPoint;
+    });
+    if (near && isValidConnection(selectedPoint, near)) {
+      addOrUpdateBridge(selectedPoint, near);
+      setSelectedPoint(null);
+      setIsDragging(false);
+      setDragLine(null);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    setSelectedPoint(null);
+    setDragLine(null);
+  };
+
   const handleMouseUp = () => {
     setIsDragging(false);
     setSelectedPoint(null);
@@ -820,6 +860,9 @@ export default function HashiGame() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
       >
         {/* Username Modal */}
         {showUsernameModal && (
@@ -956,9 +999,13 @@ export default function HashiGame() {
                   className={`absolute transform -translate-x-1/2 -translate-y-1/2 ${size}
                     ${bgColor} ${borderColor} rounded-full shadow-lg
                     flex items-center justify-center cursor-pointer select-none
-                    hover:shadow-xl transition-colors`}
+                    hover:shadow-xl transition-colors touch-none`}
                   style={{ left: `${left}%`, top: `${top}%` }}
                   onMouseDown={() => handlePointClick(point)}
+                  onTouchStart={(e) => {
+                    e.preventDefault(); // Prevent double-tap zoom
+                    handlePointClick(point);
+                  }}
                 >
                   <span className="font-bold text-white select-none">
                     {point.remainingConnections}
