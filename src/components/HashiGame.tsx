@@ -75,9 +75,9 @@ const SCORE_MULTIPLIERS: Record<Mode, number> = {
 
 /** Timer duration for each mode (in seconds) */
 const MODE_TIMERS: Record<Mode, number> = {
-  easy: 30,
-  normal: 60,
-  insane: 120,
+  easy: 60,
+  normal: 100,
+  insane: 150,
 };
 
 /** --------------------------
