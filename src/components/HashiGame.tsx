@@ -73,6 +73,13 @@ const SCORE_MULTIPLIERS: Record<Mode, number> = {
   insane: 10,
 };
 
+/** Timer duration for each mode (in seconds) */
+const MODE_TIMERS: Record<Mode, number> = {
+  easy: 30,
+  normal: 60,
+  insane: 120,
+};
+
 /** --------------------------
  * 2) PUZZLE GENERATION
  * --------------------------*/
@@ -384,8 +391,8 @@ export default function HashiGame() {
       setShowUsernameModal(false);
       setCurrentScore(0);
       setPuzzlesSolved(0);
-      setTimeLeft(120); // Reset timer to 120 seconds
-      setIsTimerRunning(true); // Start timer when game starts
+      setTimeLeft(MODE_TIMERS[mode]); // Use mode-specific timer
+      setIsTimerRunning(true);
       setIsGameOver(false);
       loadRandomPuzzle();
     }
@@ -414,7 +421,7 @@ export default function HashiGame() {
   const handleRestartGame = () => {
     setCurrentScore(0);
     setPuzzlesSolved(0);
-    setTimeLeft(120);
+    setTimeLeft(MODE_TIMERS[mode]); // Use mode-specific timer
     setIsTimerRunning(true);
     setIsGameOver(false);
     loadRandomPuzzle();
@@ -470,6 +477,13 @@ export default function HashiGame() {
       setIsDragging(false);
     }
   }, [mode, isUpdatingScore]);
+
+  // Update timer when mode changes
+  useEffect(() => {
+    if (!showUsernameModal && !isGameOver) {
+      setTimeLeft(MODE_TIMERS[mode]);
+    }
+  }, [mode, showUsernameModal, isGameOver]);
 
   /**
    * Check if we can connect these two points (same row/col, each > 0, no in-between).
