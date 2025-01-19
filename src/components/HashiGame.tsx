@@ -286,7 +286,7 @@ export default function HashiGame() {
   const [isGameWon, setIsGameWon] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdatingScore, setIsUpdatingScore] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<number>(60); // Start with 60 seconds
+  const [timeLeft, setTimeLeft] = useState<number>(120); // Start with 120 seconds
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
 
@@ -296,6 +296,9 @@ export default function HashiGame() {
   const [highScores, setHighScores] = useState<ScoreEntry[]>([]);
   const [showUsernameModal, setShowUsernameModal] = useState(true);
   const [puzzlesSolved, setPuzzlesSolved] = useState(0);
+
+  // Add state for mobile menu
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Format time as MM:SS
   const formatTime = (seconds: number): string => {
@@ -381,7 +384,7 @@ export default function HashiGame() {
       setShowUsernameModal(false);
       setCurrentScore(0);
       setPuzzlesSolved(0);
-      setTimeLeft(60); // Reset timer to 60 seconds
+      setTimeLeft(120); // Reset timer to 120 seconds
       setIsTimerRunning(true); // Start timer when game starts
       setIsGameOver(false);
       loadRandomPuzzle();
@@ -411,7 +414,7 @@ export default function HashiGame() {
   const handleRestartGame = () => {
     setCurrentScore(0);
     setPuzzlesSolved(0);
-    setTimeLeft(60);
+    setTimeLeft(120);
     setIsTimerRunning(true);
     setIsGameOver(false);
     loadRandomPuzzle();
@@ -694,13 +697,35 @@ export default function HashiGame() {
   const scaleVal = RENDER_SCALES[mode];
 
   return (
-    <div className="flex min-h-screen bg-black text-white">
-      {/* Left Sidebar */}
-      <div className="w-64 p-4 border-r border-white/10 flex flex-col gap-4 overflow-y-auto">
+    <div className="flex flex-col md:flex-row min-h-screen bg-black text-white">
+      {/* Mobile Menu Button */}
+      <button 
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-zinc-800 rounded-lg"
+      >
+        {isMobileMenuOpen ? '✕' : '☰'}
+      </button>
+
+      {/* Left Sidebar - Hidden on mobile unless menu is open */}
+      <div className={`
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} 
+        md:translate-x-0
+        fixed md:relative
+        top-0 left-0 h-full
+        w-64 p-4 border-r border-white/10 
+        flex flex-col gap-4 
+        bg-black
+        overflow-y-auto
+        transition-transform duration-300
+        z-40
+      `}>
         {/* Mode Select */}
         <div className="flex flex-col gap-2">
           <button
-            onClick={() => setMode('easy')}
+            onClick={() => {
+              setMode('easy');
+              setIsMobileMenuOpen(false);
+            }}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
               mode === 'easy' 
                 ? 'bg-white text-black shadow-lg' 
@@ -710,7 +735,10 @@ export default function HashiGame() {
             Easy (1x Multiplier)
           </button>
           <button
-            onClick={() => setMode('normal')}
+            onClick={() => {
+              setMode('normal');
+              setIsMobileMenuOpen(false);
+            }}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
               mode === 'normal' 
                 ? 'bg-white text-black shadow-lg' 
@@ -720,7 +748,10 @@ export default function HashiGame() {
             Normal (3x)
           </button>
           <button
-            onClick={() => setMode('insane')}
+            onClick={() => {
+              setMode('insane');
+              setIsMobileMenuOpen(false);
+            }}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
               mode === 'insane' 
                 ? 'bg-white text-black shadow-lg' 
@@ -732,7 +763,10 @@ export default function HashiGame() {
         </div>
 
         <button
-          onClick={loadRandomPuzzle}
+          onClick={() => {
+            loadRandomPuzzle();
+            setIsMobileMenuOpen(false);
+          }}
           disabled={isLoading}
           className="px-4 py-1.5 bg-white text-black text-sm rounded-full font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg"
         >
@@ -782,17 +816,17 @@ export default function HashiGame() {
 
       {/* Main Game Area */}
       <div 
-        className="flex-1 flex items-center justify-center relative"
+        className="flex-1 flex items-center justify-center relative min-h-screen md:min-h-0 pt-16 md:pt-0"
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
         {/* Username Modal */}
         {showUsernameModal && (
-          <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-            <div className="bg-zinc-900 p-8 rounded-2xl shadow-2xl border border-zinc-700">
+          <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+            <div className="bg-zinc-900 p-6 md:p-8 rounded-2xl shadow-2xl border border-zinc-700 w-full max-w-sm">
               <div className="flex items-center gap-4 mb-4">
-                <h2 className="text-2xl font-bold text-white">Enter Your Username</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-white">Enter Your Username</h2>
               </div>
               <form onSubmit={handleUsernameSubmit} className="space-y-4">
                 <input
@@ -822,19 +856,19 @@ export default function HashiGame() {
 
         {/* Game Over Modal */}
         {isGameOver && (
-          <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-            <div className="bg-zinc-900 p-8 rounded-2xl shadow-2xl border border-zinc-700 text-center">
-              <h2 className="text-3xl font-bold text-white mb-4">Game Over!</h2>
+          <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+            <div className="bg-zinc-900 p-6 md:p-8 rounded-2xl shadow-2xl border border-zinc-700 w-full max-w-sm text-center">
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">Game Over!</h2>
               <div className="space-y-4 mb-6">
                 <div>
                   <div className="text-sm text-white/60">Final Score</div>
-                  <div className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                     {currentScore}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-white/60">Puzzles Solved</div>
-                  <div className="text-2xl font-bold text-white">{puzzlesSolved}</div>
+                  <div className="text-xl md:text-2xl font-bold text-white">{puzzlesSolved}</div>
                 </div>
               </div>
               <button
@@ -849,7 +883,7 @@ export default function HashiGame() {
 
         {/* Game Board */}
         {board.length > 0 && !isGameOver && (
-          <div className="relative w-[500px] h-[500px] game-board">
+          <div className="relative w-[min(90vw,500px)] h-[min(90vw,500px)] game-board">
             {/* Bridges */}
             {bridges.map((bridge) => {
               const { id, start, end, count, isVertical } = bridge;
@@ -936,13 +970,13 @@ export default function HashiGame() {
         )}
 
         {/* Current Score and Timer */}
-        <div className="absolute top-4 right-8 text-right">
+        <div className="absolute top-4 right-4 md:right-8 text-right">
           <div className="text-sm text-white/60">Playing as</div>
           <div className="font-medium text-white mb-2">{username}</div>
           
           {/* Timer */}
           <div className="text-sm text-white/60">Time Left</div>
-          <div className={`text-2xl font-mono font-bold mb-2 ${
+          <div className={`text-xl md:text-2xl font-mono font-bold mb-2 ${
             timeLeft <= 30 ? 'text-red-500 animate-pulse' : 'text-white'
           }`}>
             {formatTime(timeLeft)}
@@ -950,7 +984,7 @@ export default function HashiGame() {
 
           <div className="text-sm text-white/60">Score</div>
           <div className="flex items-center justify-end gap-2">
-            <div className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
+            <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
               {currentScore}
             </div>
             {isGameWon && (
