@@ -286,14 +286,16 @@ export default function HashiGame() {
   const [isGameWon, setIsGameWon] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdatingScore, setIsUpdatingScore] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<number>(180); // 3 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState<number>(60); // Start with 60 seconds
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [isGameOver, setIsGameOver] = useState(false);
 
   // New state for scoring
   const [username, setUsername] = useState<string>('');
   const [currentScore, setCurrentScore] = useState<number>(0);
   const [highScores, setHighScores] = useState<ScoreEntry[]>([]);
   const [showUsernameModal, setShowUsernameModal] = useState(true);
+  const [puzzlesSolved, setPuzzlesSolved] = useState(0);
 
   // Format time as MM:SS
   const formatTime = (seconds: number): string => {
@@ -306,7 +308,7 @@ export default function HashiGame() {
    * Reload puzzle 
    */
   const loadRandomPuzzle = useCallback(() => {
-    if (isLoading) return; // Prevent multiple loads
+    if (isLoading || isGameOver) return; // Prevent loads if game is over
     setIsLoading(true);
     setTimeout(() => {
       const puzzle = generateValidPuzzle(mode);
@@ -317,24 +319,22 @@ export default function HashiGame() {
       setIsDragging(false);
       setIsGameWon(false);
       setIsLoading(false);
-      setIsUpdatingScore(false); // Reset the score update flag
-      setTimeLeft(180); // Reset timer to 3 minutes
-      setIsTimerRunning(true); // Start the timer
+      setIsUpdatingScore(false);
     }, 300);
-  }, [mode, isLoading]);
+  }, [mode, isLoading, isGameOver]);
 
   // Timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
-    if (isTimerRunning && timeLeft > 0 && !isGameWon) {
+    if (isTimerRunning && timeLeft > 0 && !isGameOver) {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
-            // Time's up - end the game
+            // Time's up - game over
             setIsTimerRunning(false);
-            loadRandomPuzzle();
-            return 180; // Reset to 3 minutes
+            setIsGameOver(true);
+            return 0;
           }
           return prev - 1;
         });
@@ -346,7 +346,7 @@ export default function HashiGame() {
         clearInterval(interval);
       }
     };
-  }, [isTimerRunning, timeLeft, isGameWon, loadRandomPuzzle]);
+  }, [isTimerRunning, timeLeft, isGameOver]);
 
   // Load high scores and current user's score on mount
   useEffect(() => {
@@ -380,8 +380,11 @@ export default function HashiGame() {
     if (username.trim()) {
       setShowUsernameModal(false);
       setCurrentScore(0);
-      setTimeLeft(180); // Reset timer
+      setPuzzlesSolved(0);
+      setTimeLeft(60); // Reset timer to 60 seconds
       setIsTimerRunning(true); // Start timer when game starts
+      setIsGameOver(false);
+      loadRandomPuzzle();
     }
   };
 
@@ -404,10 +407,20 @@ export default function HashiGame() {
     setUsername(`${adj}_${poke}`);
   };
 
+  // Handle game restart
+  const handleRestartGame = () => {
+    setCurrentScore(0);
+    setPuzzlesSolved(0);
+    setTimeLeft(60);
+    setIsTimerRunning(true);
+    setIsGameOver(false);
+    loadRandomPuzzle();
+  };
+
   // Auto-load next puzzle on win with better score handling
   useEffect(() => {
     if (isGameWon && username && !isUpdatingScore) {
-      setIsUpdatingScore(true); // Set flag to prevent multiple updates
+      setIsUpdatingScore(true);
       const scoreMultiplier = SCORE_MULTIPLIERS[mode];
       const newScore = currentScore + scoreMultiplier;
       
@@ -421,6 +434,8 @@ export default function HashiGame() {
 
           if (result) {
             setCurrentScore(newScore);
+            setPuzzlesSolved(prev => prev + 1);
+            setTimeLeft(prev => prev + 10); // Add 10 seconds for solving a puzzle
             // Refresh high scores
             const scores = await highScoresApi.getAll();
             setHighScores(scores);
@@ -429,7 +444,6 @@ export default function HashiGame() {
           console.error('Error updating score:', error);
         }
 
-        // Use RAF to ensure we're not blocking the UI
         requestAnimationFrame(() => {
           setTimeout(() => {
             loadRandomPuzzle();
@@ -806,11 +820,36 @@ export default function HashiGame() {
           </div>
         )}
 
+        {/* Game Over Modal */}
+        {isGameOver && (
+          <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+            <div className="bg-zinc-900 p-8 rounded-2xl shadow-2xl border border-zinc-700 text-center">
+              <h2 className="text-3xl font-bold text-white mb-4">Game Over!</h2>
+              <div className="space-y-4 mb-6">
+                <div>
+                  <div className="text-sm text-white/60">Final Score</div>
+                  <div className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    {currentScore}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-white/60">Puzzles Solved</div>
+                  <div className="text-2xl font-bold text-white">{puzzlesSolved}</div>
+                </div>
+              </div>
+              <button
+                onClick={handleRestartGame}
+                className="w-full px-4 py-2 bg-white text-black rounded-lg font-medium hover:bg-gray-100 transition-colors"
+              >
+                Play Again
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Game Board */}
-        {board.length > 0 && (
-          <div
-            className="relative w-[500px] h-[500px] game-board"
-          >
+        {board.length > 0 && !isGameOver && (
+          <div className="relative w-[500px] h-[500px] game-board">
             {/* Bridges */}
             {bridges.map((bridge) => {
               const { id, start, end, count, isVertical } = bridge;
@@ -920,6 +959,10 @@ export default function HashiGame() {
               </div>
             )}
           </div>
+
+          {/* Puzzles Solved Counter */}
+          <div className="text-sm text-white/60 mt-2">Puzzles Solved</div>
+          <div className="text-lg font-bold text-white">{puzzlesSolved}</div>
         </div>
       </div>
     </div>
