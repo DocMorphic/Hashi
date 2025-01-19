@@ -286,12 +286,67 @@ export default function HashiGame() {
   const [isGameWon, setIsGameWon] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdatingScore, setIsUpdatingScore] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number>(180); // 3 minutes in seconds
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
 
   // New state for scoring
   const [username, setUsername] = useState<string>('');
   const [currentScore, setCurrentScore] = useState<number>(0);
   const [highScores, setHighScores] = useState<ScoreEntry[]>([]);
   const [showUsernameModal, setShowUsernameModal] = useState(true);
+
+  // Format time as MM:SS
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  /** 
+   * Reload puzzle 
+   */
+  const loadRandomPuzzle = useCallback(() => {
+    if (isLoading) return; // Prevent multiple loads
+    setIsLoading(true);
+    setTimeout(() => {
+      const puzzle = generateValidPuzzle(mode);
+      setBoard(puzzle);
+      setBridges([]);
+      setSelectedPoint(null);
+      setDragLine(null);
+      setIsDragging(false);
+      setIsGameWon(false);
+      setIsLoading(false);
+      setIsUpdatingScore(false); // Reset the score update flag
+      setTimeLeft(180); // Reset timer to 3 minutes
+      setIsTimerRunning(true); // Start the timer
+    }, 300);
+  }, [mode, isLoading]);
+
+  // Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (isTimerRunning && timeLeft > 0 && !isGameWon) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            // Time's up - end the game
+            setIsTimerRunning(false);
+            loadRandomPuzzle();
+            return 180; // Reset to 3 minutes
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isTimerRunning, timeLeft, isGameWon, loadRandomPuzzle]);
 
   // Load high scores and current user's score on mount
   useEffect(() => {
@@ -324,8 +379,9 @@ export default function HashiGame() {
     e.preventDefault();
     if (username.trim()) {
       setShowUsernameModal(false);
-      // Reset score when new username is set
       setCurrentScore(0);
+      setTimeLeft(180); // Reset timer
+      setIsTimerRunning(true); // Start timer when game starts
     }
   };
 
@@ -347,25 +403,6 @@ export default function HashiGame() {
     const poke = pokemon[Math.floor(Math.random() * pokemon.length)];
     setUsername(`${adj}_${poke}`);
   };
-
-  /** 
-   * Reload puzzle 
-   */
-  const loadRandomPuzzle = useCallback(() => {
-    if (isLoading) return; // Prevent multiple loads
-    setIsLoading(true);
-    setTimeout(() => {
-      const puzzle = generateValidPuzzle(mode);
-      setBoard(puzzle);
-      setBridges([]);
-      setSelectedPoint(null);
-      setDragLine(null);
-      setIsDragging(false);
-      setIsGameWon(false);
-      setIsLoading(false);
-      setIsUpdatingScore(false); // Reset the score update flag
-    }, 300);
-  }, [mode, isLoading]);
 
   // Auto-load next puzzle on win with better score handling
   useEffect(() => {
@@ -859,10 +896,19 @@ export default function HashiGame() {
           </div>
         )}
 
-        {/* Current Score with Confetti */}
+        {/* Current Score and Timer */}
         <div className="absolute top-4 right-8 text-right">
           <div className="text-sm text-white/60">Playing as</div>
           <div className="font-medium text-white mb-2">{username}</div>
+          
+          {/* Timer */}
+          <div className="text-sm text-white/60">Time Left</div>
+          <div className={`text-2xl font-mono font-bold mb-2 ${
+            timeLeft <= 30 ? 'text-red-500 animate-pulse' : 'text-white'
+          }`}>
+            {formatTime(timeLeft)}
+          </div>
+
           <div className="text-sm text-white/60">Score</div>
           <div className="flex items-center justify-end gap-2">
             <div className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
