@@ -870,13 +870,15 @@ export default function HashiGame() {
 
       {/* Main Game Area */}
       <div 
-        className="flex-1 flex items-center justify-center relative min-h-screen md:min-h-0 pt-16 md:pt-0"
+        className="flex-1 flex items-center justify-center relative min-h-screen md:min-h-0 pt-16 md:pt-0 select-none"
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
+        onDragStart={(e) => e.preventDefault()}
+        draggable={false}
       >
         {/* Username Modal */}
         {showUsernameModal && (
@@ -940,7 +942,7 @@ export default function HashiGame() {
 
         {/* Game Board */}
         {board.length > 0 && !isGameOver && (
-          <div className="relative w-[min(90vw,500px)] h-[min(90vw,500px)] game-board">
+          <div className="relative w-[min(90vw,500px)] h-[min(90vw,500px)] game-board" draggable={false}>
             {/* Bridges */}
             {bridges.map((bridge) => {
               const { id, start, end, count, isVertical } = bridge;
