@@ -34,8 +34,8 @@ type Mode = 'easy' | 'normal' | 'insane';
 
 /** Configuration for each mode. */
 const MODES_CONFIG = {
-  easy:   { gridSize: 5, minIslands: 5,  maxIslands: 8  },
-  normal: { gridSize: 7, minIslands: 8,  maxIslands: 14 },
+  easy: { gridSize: 5, minIslands: 5, maxIslands: 8 },
+  normal: { gridSize: 7, minIslands: 8, maxIslands: 14 },
   insane: { gridSize: 9, minIslands: 12, maxIslands: 20 },
 };
 
@@ -401,17 +401,17 @@ export default function HashiGame() {
   // Generate random cool username
   const generateRandomUsername = () => {
     const adjectives = [
-      'shiny', 'mystic', 'swift', 'fierce', 'shadow', 'cosmic', 
+      'shiny', 'mystic', 'swift', 'fierce', 'shadow', 'cosmic',
       'thunder', 'crystal', 'ancient', 'mighty', 'lunar', 'royal',
       'golden', 'silver', 'blazing', 'frozen', 'psychic', 'stellar'
     ];
     const pokemon = [
-      'pikachu', 'charizard', 'mewtwo', 'snorlax', 'gengar', 
+      'pikachu', 'charizard', 'mewtwo', 'snorlax', 'gengar',
       'dragonite', 'gyarados', 'eevee', 'lucario', 'gardevoir',
       'rayquaza', 'umbreon', 'sylveon', 'mew', 'lugia', 'arceus',
       'greninja', 'mimikyu', 'bulbasaur', 'squirtle'
     ];
-    
+
     const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
     const poke = pokemon[Math.floor(Math.random() * pokemon.length)];
     setUsername(`${adj}_${poke}`);
@@ -433,7 +433,7 @@ export default function HashiGame() {
       setIsUpdatingScore(true);
       const scoreMultiplier = SCORE_MULTIPLIERS[mode];
       const newScore = currentScore + scoreMultiplier;
-      
+
       const updateScore = async () => {
         try {
           const result = await highScoresApi.upsert({
@@ -643,13 +643,13 @@ export default function HashiGame() {
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || !selectedPoint) return;
     const scale = RENDER_SCALES[mode];
-    
+
     // Get the game board element
     const gameBoard = e.currentTarget.querySelector('.game-board') as HTMLElement;
     if (!gameBoard) return;
-    
+
     const rect = gameBoard.getBoundingClientRect();
-    
+
     // Calculate position relative to the game board
     const x = ((e.clientX - rect.left) / rect.width) * scale;
     const y = ((e.clientY - rect.top) / rect.height) * scale;
@@ -674,16 +674,16 @@ export default function HashiGame() {
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging || !selectedPoint) return;
     e.preventDefault(); // Prevent scrolling while dragging
-    
+
     const scale = RENDER_SCALES[mode];
     const touch = e.touches[0];
-    
+
     // Get the game board element
     const gameBoard = e.currentTarget.querySelector('.game-board') as HTMLElement;
     if (!gameBoard) return;
-    
+
     const rect = gameBoard.getBoundingClientRect();
-    
+
     // Calculate position relative to the game board
     const x = ((touch.clientX - rect.left) / rect.width) * scale;
     const y = ((touch.clientY - rect.top) / rect.height) * scale;
@@ -730,9 +730,8 @@ export default function HashiGame() {
       top: `${(selectedPoint.y / scale) * 100}%`,
       width: '4px',
       height: `${(length / scale) * 100}%`,
-      transform: `translateX(-2px) rotate(${
-        (Math.atan2(dy, dx) * 180) / Math.PI - 90
-      }deg)`,
+      transform: `translateX(-2px) rotate(${(Math.atan2(dy, dx) * 180) / Math.PI - 90
+        }deg)`,
       transformOrigin: 'top',
     };
   };
@@ -751,53 +750,87 @@ export default function HashiGame() {
   const scaleVal = RENDER_SCALES[mode];
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-black text-white">
-      {/* Mobile Menu Button */}
-      <button 
+    <div className="flex flex-col md:flex-row min-h-screen min-h-[100dvh] bg-black text-white overflow-hidden">
+      {/* ===== MOBILE TOP BAR (hidden on desktop) ===== */}
+      <div className="md:hidden flex items-center justify-between px-3 py-2 bg-zinc-900/80 border-b border-white/10 z-30">
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-white/50">{username}</span>
+          <span className={`text-sm font-mono font-bold ${timeLeft <= 30 ? 'text-red-500 animate-pulse' : 'text-white'
+            }`}>
+            {formatTime(timeLeft)}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-white/50">Score</span>
+            <span className="text-sm font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              {currentScore}
+            </span>
+            {isGameWon && <span className="animate-bounce text-sm">🎊</span>}
+          </div>
+          <span className="text-xs text-white/40">·</span>
+          <span className="text-xs text-white/50">#{puzzlesSolved}</span>
+        </div>
+      </div>
+
+      {/* ===== MOBILE BOTTOM SHEET TOGGLE (hidden on desktop) ===== */}
+      <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-zinc-800 rounded-lg"
+        className="md:hidden fixed bottom-4 right-4 z-50 w-12 h-12 bg-zinc-800 border border-white/10 rounded-full flex items-center justify-center text-lg shadow-xl active:scale-95 transition-transform"
       >
         {isMobileMenuOpen ? '✕' : '☰'}
       </button>
 
-      {/* Left Sidebar - Hidden on mobile unless menu is open */}
+      {/* ===== MOBILE BOTTOM SHEET BACKDROP ===== */}
+      {isMobileMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/60 z-40"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* ===== SIDEBAR / BOTTOM SHEET ===== */}
       <div className={`
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} 
-        md:translate-x-0
+        md:translate-x-0 md:translate-y-0
         fixed md:relative
-        top-0 left-0 h-full
-        w-64 p-4 border-r border-white/10 
+        md:top-0 md:left-0 md:h-full
+        bottom-0 left-0 right-0
+        ${isMobileMenuOpen ? 'translate-y-0' : 'translate-y-full'}
+        md:w-64 md:max-h-full max-h-[60vh]
+        p-4 border-t md:border-t-0 md:border-r border-white/10 
         flex flex-col gap-4 
-        bg-black
+        bg-zinc-950 md:bg-black
         overflow-y-auto
-        transition-transform duration-300
+        transition-transform duration-300 ease-out
         z-40
+        rounded-t-2xl md:rounded-none
       `}>
+        {/* Drag handle on mobile */}
+        <div className="md:hidden w-10 h-1 bg-white/20 rounded-full mx-auto mb-1" />
+
         {/* Mode Select */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-row md:flex-col gap-2">
           <button
             onClick={() => {
               setMode('easy');
               setIsMobileMenuOpen(false);
             }}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-              mode === 'easy' 
-                ? 'bg-white text-black shadow-lg' 
-                : 'bg-zinc-800 text-white hover:bg-zinc-700'
-            }`}
+            className={`flex-1 md:flex-none px-4 py-2 md:py-1.5 rounded-full text-sm font-medium transition-all ${mode === 'easy'
+                ? 'bg-white text-black shadow-lg'
+                : 'bg-zinc-800 text-white hover:bg-zinc-700 active:bg-zinc-600'
+              }`}
           >
-            Easy (1x Multiplier)
+            Easy (1x)
           </button>
           <button
             onClick={() => {
               setMode('normal');
               setIsMobileMenuOpen(false);
             }}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-              mode === 'normal' 
-                ? 'bg-white text-black shadow-lg' 
-                : 'bg-zinc-800 text-white hover:bg-zinc-700'
-            }`}
+            className={`flex-1 md:flex-none px-4 py-2 md:py-1.5 rounded-full text-sm font-medium transition-all ${mode === 'normal'
+                ? 'bg-white text-black shadow-lg'
+                : 'bg-zinc-800 text-white hover:bg-zinc-700 active:bg-zinc-600'
+              }`}
           >
             Normal (3x)
           </button>
@@ -806,11 +839,10 @@ export default function HashiGame() {
               setMode('insane');
               setIsMobileMenuOpen(false);
             }}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-              mode === 'insane' 
-                ? 'bg-white text-black shadow-lg' 
-                : 'bg-zinc-800 text-white hover:bg-zinc-700'
-            }`}
+            className={`flex-1 md:flex-none px-4 py-2 md:py-1.5 rounded-full text-sm font-medium transition-all ${mode === 'insane'
+                ? 'bg-white text-black shadow-lg'
+                : 'bg-zinc-800 text-white hover:bg-zinc-700 active:bg-zinc-600'
+              }`}
           >
             I&apos;m Bored (10x)
           </button>
@@ -822,13 +854,13 @@ export default function HashiGame() {
             setIsMobileMenuOpen(false);
           }}
           disabled={isLoading}
-          className="px-4 py-1.5 bg-white text-black text-sm rounded-full font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg"
+          className="px-4 py-2 md:py-1.5 bg-white text-black text-sm rounded-full font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? 'Loading...' : 'New Puzzle'}
         </button>
 
-        {/* Game Rules */}
-        <div className="mt-2">
+        {/* Game Rules - hidden on mobile bottom sheet for cleanliness */}
+        <div className="hidden md:block mt-2">
           <h3 className="text-sm font-bold mb-2 text-white/80">How to Play</h3>
           <div className="space-y-2 text-xs text-white/60">
             <p>🎯 Goal: Connect all islands with bridges until each island has its required number of connections.</p>
@@ -842,8 +874,8 @@ export default function HashiGame() {
             </ul>
             <p>🎮 Controls:</p>
             <ul className="list-disc pl-4 space-y-1">
-              <li>Click and drag between islands to connect</li>
-              <li>Click on a bridge to remove it</li>
+              <li>Tap and drag between islands to connect</li>
+              <li>Tap on a bridge to remove it</li>
               <li>Complete the puzzle to score points</li>
             </ul>
           </div>
@@ -854,11 +886,10 @@ export default function HashiGame() {
           <h3 className="text-sm font-bold mb-2 text-white/80">Top Players</h3>
           <div className="space-y-2">
             {highScores.map((entry) => (
-              <div 
+              <div
                 key={`${entry.username}-${entry.timestamp}`}
-                className={`text-xs flex justify-between items-center ${
-                  entry.username === username ? 'text-purple-400 font-medium' : 'text-white/60'
-                }`}
+                className={`text-xs flex justify-between items-center ${entry.username === username ? 'text-purple-400 font-medium' : 'text-white/60'
+                  }`}
               >
                 <span>{entry.username}</span>
                 <span className="font-mono">{entry.score}</span>
@@ -868,9 +899,9 @@ export default function HashiGame() {
         </div>
       </div>
 
-      {/* Main Game Area */}
-      <div 
-        className="flex-1 flex items-center justify-center relative min-h-screen md:min-h-0 pt-16 md:pt-0 select-none"
+      {/* ===== MAIN GAME AREA ===== */}
+      <div
+        className="game-area flex-1 flex items-center justify-center relative select-none"
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
@@ -892,19 +923,21 @@ export default function HashiGame() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-4 py-2 bg-black border border-zinc-700 rounded-lg text-white"
+                  className="w-full px-4 py-3 bg-black border border-zinc-700 rounded-lg text-white text-base"
                   placeholder="Your username"
+                  autoComplete="off"
+                  autoCapitalize="off"
                 />
                 <button
                   type="button"
                   onClick={generateRandomUsername}
-                  className="w-full px-4 py-2 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition-colors"
+                  className="w-full px-4 py-3 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 active:bg-zinc-600 transition-colors"
                 >
                   Generate Random Username
                 </button>
                 <button
                   type="submit"
-                  className="w-full px-4 py-2 bg-white text-black rounded-lg font-medium"
+                  className="w-full px-4 py-3 bg-white text-black rounded-lg font-medium active:bg-gray-200 transition-colors"
                 >
                   Start Playing
                 </button>
@@ -932,7 +965,7 @@ export default function HashiGame() {
               </div>
               <button
                 onClick={handleRestartGame}
-                className="w-full px-4 py-2 bg-white text-black rounded-lg font-medium hover:bg-gray-100 transition-colors"
+                className="w-full px-4 py-3 bg-white text-black rounded-lg font-medium hover:bg-gray-100 active:bg-gray-200 transition-colors"
               >
                 Play Again
               </button>
@@ -942,7 +975,7 @@ export default function HashiGame() {
 
         {/* Game Board */}
         {board.length > 0 && !isGameOver && (
-          <div className="relative w-[min(90vw,500px)] h-[min(90vw,500px)] game-board" draggable={false}>
+          <div className="relative w-[min(92vw,70vh,500px)] h-[min(92vw,70vh,500px)] md:w-[min(90vw,500px)] md:h-[min(90vw,500px)] game-board" draggable={false}>
             {/* Bridges */}
             {bridges.map((bridge) => {
               const { id, start, end, count, isVertical } = bridge;
@@ -971,11 +1004,11 @@ export default function HashiGame() {
                     style={{
                       left: `${leftPct}%`,
                       top: `${topPct}%`,
-                      width: isVertical ? '3px' : `${(dist / scaleVal) * 100}%`,
-                      height: isVertical ? `${(dist / scaleVal) * 100}%` : '3px',
+                      width: isVertical ? `${Math.max(12, 3)}px` : `${(dist / scaleVal) * 100}%`,
+                      height: isVertical ? `${(dist / scaleVal) * 100}%` : `${Math.max(12, 3)}px`,
                       transform: isVertical
-                        ? `translateX(${offset}px)`
-                        : `translateY(${offset}px)`,
+                        ? `translateX(${offset - 4}px)`
+                        : `translateY(${offset - 4}px)`,
                     }}
                     onClick={() => handleBridgeClick(bridge)}
                   />
@@ -995,12 +1028,15 @@ export default function HashiGame() {
             {board.map((point) => {
               const left = (point.x / scaleVal) * 100;
               const top = (point.y / scaleVal) * 100;
-              const isLarge = scaleVal > 5;
-              const size = isLarge ? 'w-8 h-8 text-base' : 'w-10 h-10 text-lg';
+              // On mobile: always use 44px minimum for tap targets
+              // On desktop: keep original sizing logic
+              const size = scaleVal > 5
+                ? 'w-9 h-9 md:w-8 md:h-8 text-sm md:text-base'
+                : 'w-11 h-11 md:w-10 md:h-10 text-base md:text-lg';
 
               let bgColor = 'bg-black';
               let borderColor = 'border-2 border-white/20';
-              
+
               if (selectedPoint === point) {
                 bgColor = 'bg-black';
                 borderColor = 'border-2 border-white';
@@ -1019,7 +1055,7 @@ export default function HashiGame() {
                   style={{ left: `${left}%`, top: `${top}%` }}
                   onMouseDown={() => handlePointClick(point)}
                   onTouchStart={(e) => {
-                    e.preventDefault(); // Prevent double-tap zoom
+                    e.preventDefault();
                     handlePointClick(point);
                   }}
                 >
@@ -1032,22 +1068,21 @@ export default function HashiGame() {
           </div>
         )}
 
-        {/* Current Score and Timer */}
-        <div className="absolute top-4 right-4 md:right-8 text-right">
+        {/* ===== DESKTOP SCORE PANEL (hidden on mobile) ===== */}
+        <div className="hidden md:block absolute top-4 right-8 text-right">
           <div className="text-sm text-white/60">Playing as</div>
           <div className="font-medium text-white mb-2">{username}</div>
-          
+
           {/* Timer */}
           <div className="text-sm text-white/60">Time Left</div>
-          <div className={`text-xl md:text-2xl font-mono font-bold mb-2 ${
-            timeLeft <= 30 ? 'text-red-500 animate-pulse' : 'text-white'
-          }`}>
+          <div className={`text-2xl font-mono font-bold mb-2 ${timeLeft <= 30 ? 'text-red-500 animate-pulse' : 'text-white'
+            }`}>
             {formatTime(timeLeft)}
           </div>
 
           <div className="text-sm text-white/60">Score</div>
           <div className="flex items-center justify-end gap-2">
-            <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
+            <div className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
               {currentScore}
             </div>
             {isGameWon && (
