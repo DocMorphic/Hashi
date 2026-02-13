@@ -816,8 +816,8 @@ export default function HashiGame() {
               setIsMobileMenuOpen(false);
             }}
             className={`flex-1 md:flex-none px-4 py-2 md:py-1.5 rounded-full text-sm font-medium transition-all ${mode === 'easy'
-                ? 'bg-white text-black shadow-lg'
-                : 'bg-zinc-800 text-white hover:bg-zinc-700 active:bg-zinc-600'
+              ? 'bg-white text-black shadow-lg'
+              : 'bg-zinc-800 text-white hover:bg-zinc-700 active:bg-zinc-600'
               }`}
           >
             Easy (1x)
@@ -828,8 +828,8 @@ export default function HashiGame() {
               setIsMobileMenuOpen(false);
             }}
             className={`flex-1 md:flex-none px-4 py-2 md:py-1.5 rounded-full text-sm font-medium transition-all ${mode === 'normal'
-                ? 'bg-white text-black shadow-lg'
-                : 'bg-zinc-800 text-white hover:bg-zinc-700 active:bg-zinc-600'
+              ? 'bg-white text-black shadow-lg'
+              : 'bg-zinc-800 text-white hover:bg-zinc-700 active:bg-zinc-600'
               }`}
           >
             Normal (3x)
@@ -840,8 +840,8 @@ export default function HashiGame() {
               setIsMobileMenuOpen(false);
             }}
             className={`flex-1 md:flex-none px-4 py-2 md:py-1.5 rounded-full text-sm font-medium transition-all ${mode === 'insane'
-                ? 'bg-white text-black shadow-lg'
-                : 'bg-zinc-800 text-white hover:bg-zinc-700 active:bg-zinc-600'
+              ? 'bg-white text-black shadow-lg'
+              : 'bg-zinc-800 text-white hover:bg-zinc-700 active:bg-zinc-600'
               }`}
           >
             I&apos;m Bored (10x)
@@ -975,7 +975,7 @@ export default function HashiGame() {
 
         {/* Game Board */}
         {board.length > 0 && !isGameOver && (
-          <div className="relative w-[min(92vw,70vh,500px)] h-[min(92vw,70vh,500px)] md:w-[min(90vw,500px)] md:h-[min(90vw,500px)] game-board" draggable={false}>
+          <div className="relative w-[min(100vw-48px,65vh,500px)] h-[min(100vw-48px,65vh,500px)] md:w-[min(90vw,500px)] md:h-[min(90vw,500px)] game-board" draggable={false}>
             {/* Bridges */}
             {bridges.map((bridge) => {
               const { id, start, end, count, isVertical } = bridge;
